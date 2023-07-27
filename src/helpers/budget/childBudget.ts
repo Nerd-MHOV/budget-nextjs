@@ -1,0 +1,116 @@
+import { generateBudget } from "./generateBudget";
+import {BudgetForm, BudgetRows, BudgetUnitaryDiscount} from "@/entity/budget";
+
+export async function childBudget(
+  arrForm: BudgetForm,
+  arrChild: number[],
+  unitaryDiscount: BudgetUnitaryDiscount[],
+  daily_courtesy: boolean,
+  initDate: Date,
+  finalDate: Date
+) {
+  let amountAdults = arrForm.adult ?? 0;
+  let amountChild = arrChild.length;
+  let childRows: BudgetRows[] = [];
+
+  arrChild.sort((a, b) => a - b);
+  for (let countChild = 0; countChild < arrChild.length; countChild++) {
+    const numChild = countChild + 1;
+    let valuesChild: number[] = [];
+    let totalChild = 0;
+    let discount = (Number(arrForm.discount) || 0) / 100;
+    let totalNoDiscount = 0;
+    let discountApplied = 0;
+    let uChild = Number(arrChild[countChild]);
+    let permitDiscount = true;
+    const id = 200 + numChild;
+    const desc = "CHD " + uChild + " ano(s)";
+
+    if (uChild <= 3 && numChild === 1) {
+      valuesChild = await generateBudget(
+        initDate,
+        finalDate,
+        arrForm,
+        "chd0",
+        false,
+        daily_courtesy
+      );
+      permitDiscount = false;
+    } else if ((uChild > 3 && uChild < 8) || (uChild < 8 && numChild > 1))
+      valuesChild = await generateBudget(
+        initDate,
+        finalDate,
+        arrForm,
+        "chd4",
+        false,
+        daily_courtesy
+      );
+    else
+      valuesChild = await generateBudget(
+        initDate,
+        finalDate,
+        arrForm,
+        "chd8",
+        false,
+        daily_courtesy
+      );
+
+    //COBRAR SO ALIMENTAÇÃO
+    if (numChild === 1 && uChild > 3 && uChild < 10) {
+      permitDiscount = false;
+      valuesChild = await generateBudget(
+        initDate,
+        finalDate,
+        arrForm,
+        "chd8",
+        true,
+        daily_courtesy
+      );
+    }
+
+    if (Number(amountAdults) === 1 && countChild === amountChild - 1) {
+      valuesChild = await generateBudget(
+        initDate,
+        finalDate,
+        arrForm,
+        "adt",
+        false,
+        daily_courtesy
+      );
+    }
+
+    //verify unitary discount
+    unitaryDiscount.map((unit) => {
+      if (unit.id === id && unit.name === desc) {
+        discount = unit.discount / 100;
+        permitDiscount = true;
+      }
+    });
+
+    const valuesWithDiscountChild = valuesChild.map((child) => {
+      if (!permitDiscount) {
+        totalChild += child;
+        totalNoDiscount += child;
+        return child;
+      }
+      let resultDiscount = child * discount;
+      let result = Math.round(child - resultDiscount);
+      totalChild += result;
+      totalNoDiscount += child;
+      discountApplied = discount * 100;
+      return result;
+    });
+
+    childRows.push({
+      id,
+      desc,
+      values: valuesWithDiscountChild,
+      total: totalChild,
+      noDiscount: valuesChild,
+      totalNoDiscount,
+      discountApplied,
+    });
+  }
+
+  return childRows;
+}

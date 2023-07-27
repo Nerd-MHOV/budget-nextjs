@@ -1,0 +1,30 @@
+.form{    
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    .textField {
+        margin: 2px;
+    }
+    .formBox{
+        display: flex;
+        flex-direction: column;
+    }
+}
+.occupancy, .infoApp {
+    font-size: 12px;
+}
+.infoAppBox {
+    display: flex;
+    &>div {
+        margin-right: 15px;
+    }
+}
+
+.pos-form {
+    display: flex;
+    .daily-courtesy {
+        display: flex;
+        align-items: center;
+        
+    }
+}
